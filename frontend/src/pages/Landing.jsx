@@ -247,7 +247,7 @@ const Landing = () => {
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText('https://myworldmysay.com?ref=1ca99aea-8ae1-4c96-aeaa-a')
+      await navigator.clipboard.writeText('https://parents.myworldmysay.com?ref=1ca99aea-8ae1-4c96-aeaa-a')
       setCopySuccess(true)
       setTimeout(() => setCopySuccess(false), 2000)
     } catch (err) {
@@ -444,7 +444,7 @@ const Landing = () => {
             <div style={styles.linkContainer}>
               <input 
                 type="text" 
-                value="https://myworldmysay.com?ref=1ca99aea-8ae1-4c96-aeaa-a" 
+                value="https://parents.myworldmysay.com?ref=1ca99aea-8ae1-4c96-aeaa-a" 
                 readOnly 
                 style={styles.linkInput}
               />
