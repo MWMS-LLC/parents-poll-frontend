@@ -509,16 +509,14 @@ def get_results(question_code: str):
     total_result = execute_query(
         """
         SELECT COUNT(DISTINCT user_uuid) AS n FROM (
-            SELECT DISTINCT ON (user_uuid) user_uuid
+            SELECT user_uuid
             FROM responses
             WHERE question_code = %s
-            ORDER BY user_uuid, created_at DESC
             UNION
-            SELECT DISTINCT ON (user_uuid) user_uuid
+            SELECT user_uuid
             FROM checkbox_responses
             WHERE question_code = %s
-            ORDER BY user_uuid, created_at DESC
-        ) AS latest_votes
+        ) AS all_votes
         """,
         (question_code, question_code)
     )
