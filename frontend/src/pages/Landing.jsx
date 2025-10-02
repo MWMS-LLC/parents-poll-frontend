@@ -611,6 +611,21 @@ const Landing = () => {
             )}
         </div>
 
+      {/* Teen Site Link */}
+      <div style={styles.teenLinkSection}>
+        <p style={styles.teenLinkText}>
+          Want your teen to participate too?
+        </p>
+        <a 
+          href="https://myworldmysay.com" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={styles.teenLink}
+        >
+          Share Teen Poll →
+        </a>
+      </div>
+
       {/* Category Bubbles */}
       <div style={styles.bubblesContainer}>
         <div style={styles.bubblesGrid}>
@@ -1020,6 +1035,38 @@ const styles = {
     fontWeight: '600',
     transition: 'all 0.3s ease',
     boxShadow: '0 5px 15px rgba(0, 0, 0, 0.2)'
+  },
+
+  teenLinkSection: {
+    marginTop: '20px',
+    marginBottom: '20px',
+    padding: '15px 20px',
+    background: 'rgba(78, 205, 196, 0.1)',
+    borderRadius: '15px',
+    border: '2px solid rgba(78, 205, 196, 0.3)',
+    textAlign: 'center',
+    width: '90%',
+    maxWidth: '600px'
+  },
+
+  teenLinkText: {
+    fontSize: '16px',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: '10px',
+    fontWeight: '500'
+  },
+
+  teenLink: {
+    display: 'inline-block',
+    padding: '10px 20px',
+    backgroundColor: '#4ECDC4',
+    color: 'white',
+    textDecoration: 'none',
+    borderRadius: '20px',
+    fontSize: '16px',
+    fontWeight: '600',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 4px 15px rgba(78, 205, 196, 0.3)'
   },
   
   bubblesContainer: {
