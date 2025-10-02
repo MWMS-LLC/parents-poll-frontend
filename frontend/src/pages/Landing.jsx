@@ -262,8 +262,8 @@ const Landing = () => {
   const hasConnectedAccounts = Object.values(socialHandles).some(handle => handle && handle.trim() !== '')
 
   const handleSocialShare = (platform) => {
-    const url = 'https://myworldmysay.com?ref=1ca99aea-8ae1-4c96-aeaa-a'
-    const text = 'Check out this poll app - My World My Say!'
+    const url = 'https://parents.myworldmysay.com?ref=1ca99aea-8ae1-4c96-aeaa-a'
+    const text = 'Check out this parents poll app - My World My Say!'
     
     switch (platform) {
       case 'Discord':
@@ -275,11 +275,8 @@ const Landing = () => {
         setCopySuccess(true)
         setTimeout(() => setCopySuccess(false), 2000)
         break
-      case 'Snapchat':
-        // Snapchat doesn't support direct link sharing, so copy to clipboard
-        navigator.clipboard.writeText(text + ' ' + url)
-        setCopySuccess(true)
-        setTimeout(() => setCopySuccess(false), 2000)
+      case 'Facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`)
         break
       case 'Whatsapp':
         window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`)
@@ -521,30 +518,30 @@ const Landing = () => {
             style={{
               ...styles.socialButton,
               background: hasConnectedAccounts 
-                ? 'rgba(234, 179, 8, 0.4)' 
-                : 'rgba(234, 179, 8, 0.2)',
+                ? 'rgba(24, 119, 242, 0.4)' 
+                : 'rgba(24, 119, 242, 0.2)',
               border: hasConnectedAccounts 
-                ? '1px solid rgba(250, 204, 21, 0.6)' 
-                : '1px dashed rgba(250, 204, 21, 0.4)',
+                ? '1px solid rgba(66, 103, 178, 0.6)' 
+                : '1px dashed rgba(66, 103, 178, 0.4)',
               color: hasConnectedAccounts ? 'white' : 'rgba(255, 255, 255, 0.7)'
             }}
             onMouseEnter={(e) => {
               if (hasConnectedAccounts) {
-                e.target.style.background = 'rgba(234, 179, 8, 0.5)'
+                e.target.style.background = 'rgba(24, 119, 242, 0.5)'
               } else {
-                e.target.style.background = 'rgba(234, 179, 8, 0.3)'
+                e.target.style.background = 'rgba(24, 119, 242, 0.3)'
               }
             }}
             onMouseLeave={(e) => {
               if (hasConnectedAccounts) {
-                e.target.style.background = 'rgba(234, 179, 8, 0.4)'
+                e.target.style.background = 'rgba(24, 119, 242, 0.4)'
               } else {
-                e.target.style.background = 'rgba(234, 179, 8, 0.2)'
+                e.target.style.background = 'rgba(24, 119, 242, 0.2)'
               }
             }}
-            onClick={() => handleSocialShare('Snapchat')}
+            onClick={() => handleSocialShare('Facebook')}
           >
-            Snapchat
+            Facebook
           </button>
           
           <button 
