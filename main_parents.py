@@ -1,5 +1,5 @@
-# main.py
-# main.py (updated: unified /api/vote handler that uses responses, checkbox_responses, other_responses)
+# main_parents.py
+# Parents version of the main application
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -26,23 +26,25 @@ app = FastAPI()
 # Add startup event to log initialization
 @app.on_event("startup")
 async def startup_event():
-    logger.info("Starting up application...")
+    logger.info("Starting up parents application...")
     try:
         # Test database connection
         db_check()
-        logger.info("Database connection successful")
+        logger.info("Parents database connection successful")
     except Exception as e:
-        logger.error(f"Database connection failed: {e}")
+        logger.error(f"Parents database connection failed: {e}")
         raise
 
-# ------------------ CORS setup ------------------
+# ------------------ CORS setup for parents ------------------
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://myworldmysay.com",
     "https://www.myworldmysay.com",
     "https://api.myworldmysay.com",
-    "https://teen.myworldmysay.com"
+    "https://teen.myworldmysay.com",
+    "https://parents.myworldmysay.com",
+    "https://www.parents.myworldmysay.com"
 ]
 
 app.add_middleware(
@@ -56,7 +58,7 @@ app.add_middleware(
 # ------------------ DB helper (local to main.py) ------------------
 def execute_query(query: str, params: tuple = None, fetch: bool = True):
     """
-    Execute a SQL query using the shared connection_pool from backend.db.
+    Execute a SQL query using the shared connection_pool from db.
     Returns list[dict] when fetch=True, otherwise commits and returns True.
     """
     conn = None
@@ -70,168 +72,117 @@ def execute_query(query: str, params: tuple = None, fetch: bool = True):
             cursor.execute(query)
         if fetch:
             cols = [d[0] for d in cursor.description] if cursor.description else []
-            rows = cursor.fetchall() if cursor.description else []
+            rows = cursor.fetchall()
             return [dict(zip(cols, row)) for row in rows]
         else:
             conn.commit()
             return True
     except Exception as e:
-        logging.error(f"Database operation failed: {e}")
         if conn:
-            try:
-                conn.rollback()
-            except Exception:
-                pass
-        raise HTTPException(status_code=500, detail="Database operation failed")
+            conn.rollback()
+        raise e
     finally:
         if cursor:
-            try:
-                cursor.close()
-            except Exception:
-                pass
+            cursor.close()
         if conn:
-            try:
-                connection_pool.putconn(conn)
-            except Exception:
-                pass
+            connection_pool.putconn(conn)
 
-# ------------------ Health ------------------
+# ------------------ Data models ------------------
+class UserCreate(BaseModel):
+    user_uuid: str
+    year_of_birth: int
+
+class VoteSubmission(BaseModel):
+    user_uuid: str
+    question_code: str
+    option_select: Optional[str] = None
+    option_selects: Optional[List[str]] = None
+    other_text: Optional[str] = None
+
+# ------------------ Health check ------------------
 @app.get("/health")
-def health():
-    return {"status": "ok"}
+def health_check():
+    """Health check endpoint"""
+    try:
+        db_check()
+        return {"status": "healthy", "service": "parents-poll-backend", "timestamp": datetime.now(timezone.utc).isoformat()}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Database connection failed: {str(e)}")
 
-@app.get("/db-check")
-def get_db_check():
-    return {"ok": db_check()}
-
-@app.get("/db-ssl-status")
-def get_db_ssl_status():
-    return {"ssl": db_ssl_status()}
-
-# ------------------ Categories ------------------
+# ------------------ API endpoints ------------------
 @app.get("/api/categories")
 def get_categories():
-    query = """
-        SELECT *
-        FROM categories
-        ORDER BY id
-    """
-    return {"categories": execute_query(query)}
+    """Get all categories"""
+    categories = execute_query("""
+        SELECT id, category_name, category_text, day_of_week, description, category_text_long, version, uuid, sort_order
+        FROM categories 
+        ORDER BY sort_order, id
+    """)
+    return {"categories": categories}
 
-# ------------------ Blocks ------------------
 @app.get("/api/categories/{category_id}/blocks")
 def get_blocks(category_id: int):
-    query = """
-        SELECT *
-        FROM blocks
-        WHERE category_id = %s
+    """Get blocks for a category"""
+    blocks = execute_query("""
+        SELECT id, block_number, block_code, block_text, version, uuid, category_name
+        FROM blocks 
+        WHERE category_id = %s 
         ORDER BY block_number
-    """
-    return {"blocks": execute_query(query, (category_id,))}
+    """, (category_id,))
+    return {"blocks": blocks}
 
-# ------------------ Questions ------------------
 @app.get("/api/blocks/{block_code}/questions")
-async def get_questions_by_block(block_code: str):
-    try:
-        # Split "1_1" → category_id=1, block_number=1
-        parts = block_code.split('_')
-        if len(parts) != 2:
-            raise ValueError("Invalid block code format")
+def get_questions(block_code: str):
+    """Get questions for a block"""
+    questions = execute_query("""
+        SELECT id, question_code, question_number, question_text, check_box, max_select, 
+               block_number, block_text, is_start_question, parent_question_id, color_code, version
+        FROM questions 
+        WHERE block_number = %s 
+        ORDER BY question_number
+    """, (block_code,))
+    return {"questions": questions}
 
-        category_id = int(parts[0])
-        block_number = int(parts[1])
-
-        query = """
-            SELECT *
-            FROM questions
-            WHERE category_id = %s
-              AND block_number = %s
-            ORDER BY question_number
-        """
-        results = execute_query(query, (category_id, block_number))
-
-        # ✅ Wrap like categories/blocks/options
-        return {"questions": results}
-
-    except Exception as e:
-        logger.error(f"Database operation failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Database operation failed: {e}")
-
-
-# ------------------ Options ------------------
 @app.get("/api/questions/{question_code}/options")
 def get_options(question_code: str):
-    query = """
-        SELECT *
-        FROM options
-        WHERE question_code = %s
+    """Get options for a question"""
+    options = execute_query("""
+        SELECT id, option_select, option_code, option_text, response_message, companion_advice, tone_tag, next_question_id
+        FROM options 
+        WHERE question_code = %s 
         ORDER BY option_select
-    """
-    return {"options": execute_query(query, (question_code,))}
+    """, (question_code,))
+    return {"options": options}
 
-# ------------------ Soundtracks (stubbed safely) ------------------
-@app.get("/api/soundtracks")
-def get_soundtracks():
-    query = "SELECT * FROM soundtracks ORDER BY id"
-    results = execute_query(query)
-    return {"soundtracks": results}
-
-@app.get("/api/soundtracks/playlists")
-def get_soundtrack_playlists():
-    query = "SELECT DISTINCT playlist_tag FROM soundtracks WHERE playlist_tag IS NOT NULL"
-    results = execute_query(query)
-    playlists = [row["playlist_tag"] for row in results if row.get("playlist_tag")]
-    return {"playlists": playlists}
-
-# ------------------ Users ------------------
 @app.post("/api/users")
-def create_user(user_uuid: str, year_of_birth: int):
-    query = """
-        INSERT INTO users (user_uuid, year_of_birth)
-        VALUES (%s, %s)
-        ON CONFLICT DO NOTHING
-    """
-    execute_query(query, (user_uuid, year_of_birth), fetch=False)
-    return {"message": "User created or already exists"}
+def create_user(user: UserCreate):
+    """Create a new user"""
+    try:
+        execute_query("""
+            INSERT INTO users (user_uuid, year_of_birth, created_at)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (user_uuid) DO UPDATE SET
+                year_of_birth = EXCLUDED.year_of_birth,
+                created_at = EXCLUDED.created_at
+        """, (user.user_uuid, user.year_of_birth, datetime.now()), fetch=False)
+        
+        return {"message": "User created successfully", "user_uuid": user.user_uuid}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
 
+# ------------------ Helper function for metadata ------------------
+def get_metadata(question_code: str):
+    """Get question metadata for vote processing"""
+    result = execute_query("""
+        SELECT q.question_text, q.question_number, q.category_id, c.category_name, c.category_text, q.block_number
+        FROM questions q
+        JOIN categories c ON q.category_id = c.id
+        WHERE q.question_code = %s
+    """, (question_code,))
+    
+    return result[0] if result else None
 
-
-
-# ------------------ Separate vote handler (single, checkbox, other) ------------------
-def get_metadata(q_code, opt_select=None):
-    if opt_select:
-        rows = execute_query(
-            """
-            SELECT q.question_text, q.question_number,
-                   q.category_id, c.category_name, c.category_text, q.block_number,
-                   o.option_select, o.option_code, o.option_text
-            FROM questions q
-            JOIN categories c ON q.category_id = c.id
-            JOIN options o ON q.question_code = o.question_code
-            WHERE q.question_code = %s AND o.option_select = %s
-            """,
-            (q_code, opt_select)
-        )
-    else:
-        rows = execute_query(
-            """
-            SELECT q.question_text, q.question_number,
-                   q.category_id, c.category_name, c.category_text, q.block_number
-            FROM questions q
-            JOIN categories c ON q.category_id = c.id
-            WHERE q.question_code = %s
-            """,
-            (q_code,)
-        )
-    return rows[0] if rows else None
-
-
-# ----------------------------
-# Vote submission (single, checkbox, free text)
-# ----------------------------
-# ----------------------------
-# Submit vote
-# ----------------------------
+# ------------------ Vote submission endpoints ------------------
 @app.post("/api/vote/single")
 def submit_single_vote(vote: dict):
     """Handle single-choice votes - stores in responses table"""
@@ -295,7 +246,6 @@ def submit_single_vote(vote: dict):
 
     return {"message": "Single-choice vote recorded", "question_code": question_code}
 
-# Checkbox vote endpoint
 @app.post("/api/vote/checkbox")
 def submit_checkbox_vote(vote: dict):
     """Handle checkbox votes - stores in checkbox_responses table with weights"""
@@ -365,7 +315,6 @@ def submit_checkbox_vote(vote: dict):
 
     return {"message": "Checkbox vote(s) recorded", "question_code": question_code}
 
-# Other text vote endpoint
 @app.post("/api/vote/other")
 def submit_other_vote(vote: dict):
     """Handle other text votes - stores in other_responses and creates placeholder in responses"""
@@ -426,14 +375,7 @@ def submit_other_vote(vote: dict):
 
     return {"message": "Other text response recorded", "question_code": question_code}
 
-
-
-# ----------------------------
-# Results aggregation
-# ----------------------------
-# ----------------------------
-# Results aggregation
-# ----------------------------
+# ------------------ Results aggregation ------------------
 @app.get("/api/results/{question_code}")
 def get_results(question_code: str):
     """
@@ -449,7 +391,7 @@ def get_results(question_code: str):
         SELECT option_select, option_code, option_text
         FROM options
         WHERE question_code = %s
-        ORDER BY id
+        ORDER BY option_select
         """,
         (question_code,)
     ) or []
@@ -458,12 +400,8 @@ def get_results(question_code: str):
     single_counts = execute_query(
         """
         SELECT option_select, COUNT(*)::float as votes
-        FROM (
-            SELECT DISTINCT ON (user_uuid) option_select
-            FROM responses
-            WHERE question_code = %s
-            ORDER BY user_uuid, created_at DESC
-        ) latest_votes
+        FROM responses
+        WHERE question_code = %s
         GROUP BY option_select
         """,
         (question_code,)
@@ -473,12 +411,8 @@ def get_results(question_code: str):
     checkbox_counts = execute_query(
         """
         SELECT option_select, COALESCE(SUM(weight),0)::float as votes
-        FROM (
-            SELECT DISTINCT ON (user_uuid, option_select) weight, option_select
-            FROM checkbox_responses
-            WHERE question_code = %s
-            ORDER BY user_uuid, option_select, created_at DESC
-        ) latest_checkbox_votes
+        FROM checkbox_responses
+        WHERE question_code = %s
         GROUP BY option_select
         """,
         (question_code,)
@@ -491,13 +425,12 @@ def get_results(question_code: str):
         sel = row["option_select"]
         counts[sel] = counts.get(sel, 0) + row["votes"]
 
-    # --- Build results list from canonical options ---
+    # --- Build results array with all options ---
     results = []
     for opt in option_rows:
-        sel = opt["option_select"]
-        votes = counts.get(sel, 0)
+        votes = counts.get(opt["option_select"], 0)
         results.append({
-            "option_select": opt["option_select"],  # keep display form from options table
+            "option_select": opt["option_select"],
             "option_code": opt["option_code"],
             "option_text": opt["option_text"],
             "votes": votes
@@ -507,16 +440,10 @@ def get_results(question_code: str):
     total_result = execute_query(
         """
         SELECT COUNT(DISTINCT user_uuid) AS n FROM (
-            SELECT DISTINCT ON (user_uuid) user_uuid
-            FROM responses
-            WHERE question_code = %s
-            ORDER BY user_uuid, created_at DESC
+            SELECT user_uuid FROM responses WHERE question_code = %s
             UNION
-            SELECT DISTINCT ON (user_uuid) user_uuid
-            FROM checkbox_responses
-            WHERE question_code = %s
-            ORDER BY user_uuid, created_at DESC
-        ) AS latest_votes
+            SELECT user_uuid FROM checkbox_responses WHERE question_code = %s
+        ) AS combined_votes
         """,
         (question_code, question_code)
     )
@@ -529,58 +456,17 @@ def get_results(question_code: str):
         "total_responses": total
     }
 
+# ------------------ Soundtracks endpoint ------------------
+@app.get("/api/soundtracks")
+def get_soundtracks():
+    """Get all soundtracks"""
+    soundtracks = execute_query("""
+        SELECT song_id, song_title, mood_tag, playlist_tag, lyrics_snippet, featured, featured_order, file_url
+        FROM soundtracks 
+        ORDER BY featured DESC, featured_order, song_title
+    """)
+    return {"soundtracks": soundtracks}
 
-
-
-
-
-# ------------------ Age Validation ------------------
-@app.post("/api/validate-age")
-def validate_age(payload: dict):
-    try:
-        year_of_birth = payload.get("year_of_birth")
-
-        if not year_of_birth or not str(year_of_birth).isdigit():
-            raise HTTPException(status_code=400, detail="Invalid year of birth")
-
-        yob = int(year_of_birth)
-        current_year = datetime.now().year
-        age = current_year - yob
-
-        if age < 13:
-            return {"valid": False, "reason": "too_young"}
-        elif age > 120:
-            return {"valid": False, "reason": "invalid_year"}
-        else:
-            return {"valid": True, "age": age}
-
-    except Exception as e:
-        logger.error(f"Age validation failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Age validation failed: {e}")
-
-# ------------------ Playlists ------------------
-@app.get("/api/playlists")
-def get_playlists():
-    query = "SELECT * FROM playlists ORDER BY id"
-    results = execute_query(query)
-    return {"playlists": results}
-
-@app.get("/api/playlists/{playlist_id}")
-def get_playlist(playlist_id: int):
-    query = "SELECT * FROM playlists WHERE id = %s"
-    results = execute_query(query, (playlist_id,))
-    if not results:
-        raise HTTPException(status_code=404, detail="Playlist not found")
-    return {"playlist": results[0]}
-
-@app.get("/api/playlists/{playlist_id}/songs")
-def get_playlist_songs(playlist_id: int):
-    query = """
-        SELECT ps.*, s.*
-        FROM playlist_songs ps
-        JOIN soundtracks s ON ps.song_id = s.id
-        WHERE ps.playlist_id = %s
-        ORDER BY ps.order_number
-    """
-    results = execute_query(query, (playlist_id,))
-    return {"songs": results}
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8080)
