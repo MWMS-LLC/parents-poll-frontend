@@ -414,13 +414,13 @@ const Landing = () => {
         </div>
         
         <div style={styles.taglineContainer}>
-          <div style={styles.tagline}>Funny or deep, quiet or bold—</div>
-          <div style={styles.mainTagline}>Your voice matters.</div>
-          <div style={styles.subtitle}>No names. No tracking. Just vibes.</div>
+          <div style={styles.tagline}>For Parents</div>
+          <div style={styles.mainTagline}>Your voice matters too</div>
+          <div style={styles.subtitle}>No judgment. Just reflection.</div>
           <div style={styles.description}>Stats = trends, not truths. Mood rings, not microscopes.</div>
           <div style={styles.callToAction}>
-            Pick a bubble. Say it. <br />
-            <span style={styles.highlight}>See what others feel too.</span>
+            See how other parents respond—anonymously. <br />
+            <span style={styles.highlight}>Notice the trends from teens.</span>
           </div>
         </div>
       </div>
