@@ -169,18 +169,20 @@ const Landing = () => {
     triggerThemeSong()
     
     let birthYear
-    if (selectedAge === 'before2005') {
-      navigate('/too-old')
-      return
-    } else if (selectedAge === 'after2012') {
+    if (selectedAge === 'before1996') {
+      // Age >= 30, can proceed to category page
+      birthYear = 1995 // Use 1995 as a representative year for "before 1996"
+    } else if (selectedAge === 'after1995') {
+      // Age < 30, show parent message
       navigate('/too-young')
       return
     } else {
       birthYear = parseInt(selectedAge)
-      if (birthYear < 2005 || birthYear > 2012) {
-        navigate('/too-old')
+      if (birthYear >= 1996) {
+        // Age < 30, show parent message
+        navigate('/too-young')
         return
-    }
+      }
     }
 
     try {
@@ -363,16 +365,8 @@ const Landing = () => {
               disabled={isCreatingUser}
             >
               <option value="">Year of Birth</option>
-              <option value="before2005">Before 2005</option>
-              <option value="2005">2005</option>
-              <option value="2006">2006</option>
-              <option value="2007">2007</option>
-              <option value="2008">2008</option>
-              <option value="2009">2009</option>
-              <option value="2010">2010</option>
-              <option value="2011">2011</option>
-              <option value="2012">2012</option>
-              <option value="after2012">After 2012</option>
+              <option value="before1996">Before 1996</option>
+              <option value="after1995">After 1995</option>
             </select>
             
             {/* Processing indicator */}

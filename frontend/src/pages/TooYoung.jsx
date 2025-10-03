@@ -10,7 +10,7 @@ const TooYoung = () => {
       margin: '0 auto'
     }}>
       <h1 style={{ color: '#f39c12', marginBottom: '20px' }}>
-        🚫 Access Restricted
+        👋 Hello!
       </h1>
       
       <div style={{ 
@@ -20,12 +20,11 @@ const TooYoung = () => {
         border: '1px solid #dee2e6'
       }}>
         <h2 style={{ color: '#495057', marginBottom: '15px' }}>
-          Sorry, you're too young for this poll!
+          This site is for parents of teens.
         </h2>
         
         <p style={{ color: '#6c757d', fontSize: '16px', lineHeight: '1.6' }}>
-          This Teen Poll is designed for young people born between 2007-2012. 
-          You'll need to wait a bit longer to participate!
+          Please come back when your children are teens.
         </p>
         
         <div style={{ marginTop: '30px' }}>

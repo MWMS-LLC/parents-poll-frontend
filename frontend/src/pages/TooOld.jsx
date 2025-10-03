@@ -6,7 +6,7 @@ const TooOld = () => {
     <div style={styles.container}>
       <div style={styles.header}>
         <h1 style={styles.mainTitle}>
-          Welcome, Grown-Ups 👋
+          Welcome, Parents! 👋
         </h1>
         <p style={styles.tagline}>
           Your world, your say—too.
@@ -16,20 +16,20 @@ const TooOld = () => {
       <div style={styles.content}>
         {/* For Parents Section */}
         <div style={styles.section}>
-          <h2 style={styles.sectionTitle}>For Parents</h2>
+          <h2 style={styles.sectionTitle}>Welcome, Parents!</h2>
           <p style={styles.sectionText}>
-            This isn't just about understanding your teen. It's about reconnecting with your own voice.
+            This site is designed for parents of teens. If you have teenage children, you can participate in our polls and see how other parents are responding to the same questions their teens are answering.
           </p>
           <div style={styles.questions}>
-            <p style={styles.question}>What do you wish someone had told you?</p>
+            <p style={styles.question}>What do you wish someone had told you when you were a teen?</p>
             <p style={styles.question}>What do you hope your child carries forward?</p>
           </div>
           <div style={styles.comingSoon}>
-            <p style={styles.comingSoonTitle}>Coming soon:</p>
+            <p style={styles.comingSoonTitle}>What you can do here:</p>
             <ul style={styles.featureList}>
-              <li style={styles.featureListItem}>Reflection prompts</li>
-              <li style={styles.featureListItem}>Your own private answers</li>
-              <li style={styles.featureListItem}><em>Bar charts showing how other parents responded, too</em></li>
+              <li style={styles.featureListItem}>Answer the same questions your teen is answering</li>
+              <li style={styles.featureListItem}>See how other parents responded</li>
+              <li style={styles.featureListItem}>Gain insights into your teen's world</li>
             </ul>
           </div>
         </div>

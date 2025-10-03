@@ -79,7 +79,7 @@ const HamburgerMenu = () => {
             style={styles.menuItem} 
             onClick={() => handleNavigate('/faq')}
           >
-            FAQ/About
+            About/FAQ
           </button>
           <button 
             style={styles.menuItem} 
